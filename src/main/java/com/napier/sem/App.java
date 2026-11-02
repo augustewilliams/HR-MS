@@ -75,7 +75,7 @@ public class App {
             Statement stmt = con.createStatement();
             // Create string for SQL statement
             String strSelect =
-                    "SELECT emp_no, first_name, last_name "
+                    "SELECT emp_no, first_name, last_name, job-title,department "
                             + "FROM employees "
                             + "WHERE emp_no = " + ID;
             // Execute SQL statement
@@ -103,9 +103,9 @@ public class App {
                     emp.emp_no + " "
                             + emp.first_name + " "
                             + emp.last_name + "\n"
-                            + emp.title + "\n"
+                            + "Job Title" + emp.title + "\n"
                             + "Salary:" + emp.salary + "\n"
-                            + emp.dept_name + "\n"
+                            + "Department" +emp.dept_name + "\n"
                             + "Manager: " + emp.manager + "\n");
         }
     }
