@@ -1,19 +1,21 @@
 package com.napier.sem;
 
 import java.sql.*;
+import java.util.ArrayList;
 
 public class App {
-
     public static void main(String[] args) {
         // Create new Application
         App a = new App();
 
         // Connect to database
         a.connect();
-        // Get Employee
-        Employee emp = a.getEmployee(255530);
+
+        // Get all employees (pass a specific title if needed, or remove parameter for all)
+        ArrayList<Employee> employees = a.getAllEmployees();
+
         // Display results
-        a.displayEmployee(emp);
+        a.printSalaries(employees);
 
         // Disconnect from database
         a.disconnect();
@@ -43,11 +45,15 @@ public class App {
                 // Wait a bit for db to start
                 Thread.sleep(30000);
                 // Connect to database
-                con = DriverManager.getConnection("jdbc:mysql://db:3306/employees?allowPublicKeyRetrieval=true&useSSL=false", "root", "example");
+                con = DriverManager.getConnection(
+                        "jdbc:mysql://db:3306/employees?allowPublicKeyRetrieval=true&useSSL=false",
+                        "root",
+                        "example"
+                );
                 System.out.println("Successfully connected");
                 break;
             } catch (SQLException sqle) {
-                System.out.println("Failed to connect to database attempt " + Integer.toString(i));
+                System.out.println("Failed to connect to database attempt " + i);
                 System.out.println(sqle.getMessage());
             } catch (InterruptedException ie) {
                 System.out.println("Thread interrupted? Should not happen.");
@@ -69,27 +75,41 @@ public class App {
         }
     }
 
-    public Employee getEmployee(int ID) {
+    /**
+     * Gets all current employees and their salaries/titles.
+     *
+     * @return A list of all employees, or null if there is an error.
+     */
+    public ArrayList<Employee> getAllEmployees() {
         try {
             // Create an SQL statement
             Statement stmt = con.createStatement();
-            // Create string for SQL statement
+
+            // Create string for SQL statement (note the spaces at the end of each line)
             String strSelect =
-                    "SELECT emp_no, first_name, last_name, job-title,department "
-                            + "FROM employees "
-                            + "WHERE emp_no = " + ID;
+                    "SELECT employees.emp_no, employees.first_name, employees.last_name, titles.title, salaries.salary "
+                            + "FROM employees, salaries, titles "
+                            + "WHERE employees.emp_no = salaries.emp_no "
+                            + "AND employees.emp_no = titles.emp_no "
+                            + "AND salaries.to_date = '9999-01-01' "
+                            + "AND titles.to_date = '9999-01-01' "
+                            + "ORDER BY employees.emp_no ASC";
+
             // Execute SQL statement
             ResultSet rset = stmt.executeQuery(strSelect);
-            // Return new employee if valid.
-            // Check one is returned
-            if (rset.next()) {
+
+            // Extract employee information
+            ArrayList<Employee> employees = new ArrayList<>();
+            while (rset.next()) {
                 Employee emp = new Employee();
                 emp.emp_no = rset.getInt("emp_no");
                 emp.first_name = rset.getString("first_name");
                 emp.last_name = rset.getString("last_name");
-                return emp;
-            } else
-                return null;
+                emp.title = rset.getString("title");
+                emp.salary = rset.getInt("salary");
+                employees.add(emp);
+            }
+            return employees;
         } catch (Exception e) {
             System.out.println(e.getMessage());
             System.out.println("Failed to get employee details");
@@ -97,34 +117,27 @@ public class App {
         }
     }
 
-    public void displayEmployee(Employee emp) {
-        if (emp != null) {
-            System.out.println(
-                    emp.emp_no + " "
-                            + emp.first_name + " "
-                            + emp.last_name + "\n"
-                            + "Job Title" + emp.title + "\n"
-                            + "Salary:" + emp.salary + "\n"
-                            + "Department" +emp.dept_name + "\n"
-                            + "Manager: " + emp.manager + "\n");
+    /**
+     * Prints a list of employees.
+     *
+     * @param employees The list of employees to print.
+     */
+    public void printSalaries(ArrayList<Employee> employees) {
+        // Check employees is not null
+        if (employees == null) {
+            System.out.println("No employees");
+            return;
+        }
+
+        // Print header
+        System.out.println(String.format("%-10s %-15s %-20s %-8s", "Emp No", "First Name", "Last Name", "Salary"));
+
+        // Loop over all employees in the list
+        for (Employee emp : employees) {
+            if (emp == null) continue;
+            String emp_string = String.format("%-10s %-15s %-20s  %-8s",
+                    emp.emp_no, emp.first_name, emp.last_name, emp.salary);
+            System.out.println(emp_string);
         }
     }
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
