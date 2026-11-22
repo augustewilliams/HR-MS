@@ -87,13 +87,17 @@ public class App {
 
             // Create string for SQL statement (note the spaces at the end of each line)
             String strSelect =
-                    "SELECT employees.emp_no, employees.first_name, employees.last_name, titles.title, salaries.salary "
-                            + "FROM employees, salaries, titles "
+                    "SELECT employees.emp_no, employees.first_name, employees.last_name, titles.title, salaries.salary, departments.dept_name "
+                            + "FROM employees, salaries, titles, departments, dept_emp "
                             + "WHERE employees.emp_no = salaries.emp_no "
                             + "AND employees.emp_no = titles.emp_no "
+                            + "AND employees.emp_no = dept_emp.emp_no "
+                            + "AND dept_emp.dept_no = departments.dept_no "
+
                             + "AND salaries.to_date = '9999-01-01' "
                             + "AND titles.to_date = '9999-01-01' "
-                            + "ORDER BY employees.emp_no ASC";
+                            + "AND dept_emp.to_date = '9999-01-01' "
+                            + "ORDER BY departments.dept_name ASC, employees.emp_no ASC";
 
             // Execute SQL statement
             ResultSet rset = stmt.executeQuery(strSelect);
@@ -107,6 +111,7 @@ public class App {
                 emp.last_name = rset.getString("last_name");
                 emp.title = rset.getString("title");
                 emp.salary = rset.getInt("salary");
+                emp.dept_name = rset.getString("dept_name");
                 employees.add(emp);
             }
             return employees;
@@ -130,13 +135,13 @@ public class App {
         }
 
         // Print header
-        System.out.println(String.format("%-10s %-15s %-20s %-8s", "Emp No", "First Name", "Last Name", "Salary"));
+        System.out.println(String.format("%-10s %-15s %-20s %-20s %-8s", "Emp No", "First Name", "Last Name", "Salary", "Department"));
 
         // Loop over all employees in the list
         for (Employee emp : employees) {
             if (emp == null) continue;
-            String emp_string = String.format("%-10s %-15s %-20s  %-8s",
-                    emp.emp_no, emp.first_name, emp.last_name, emp.salary);
+            String emp_string = String.format("%-10s %-15s %-20s %-20s %-8s",
+                    emp.emp_no, emp.first_name, emp.last_name, emp.salary, emp.dept_name);
             System.out.println(emp_string);
         }
     }
