@@ -11,8 +11,8 @@ public class App {
         // Connect to database
         a.connect();
 
-        // Get all employees (pass a specific title if needed, or remove parameter for all)
-        ArrayList<Employee> employees = a.getAllEmployees();
+        // Get employees for a specific role (e.g., "Senior Engineer")
+        ArrayList<Employee> employees = a.getSalariesByRole("Senior Engineer");
 
         // Display results
         a.printSalaries(employees);
@@ -76,31 +76,30 @@ public class App {
     }
 
     /**
-     * Gets all current employees and their salaries/titles.
+     * Gets all current employees and their salaries for a given role.
      *
-     * @return A list of all employees, or null if there is an error.
+     * @param title The job title/role to filter by.
+     * @return A list of matching employees, or null if there is an error.
      */
-    public ArrayList<Employee> getAllEmployees() {
+    public ArrayList<Employee> getSalariesByRole(String title) {
         try {
-            // Create an SQL statement
-            Statement stmt = con.createStatement();
-
-            // Create string for SQL statement (note the spaces at the end of each line)
+            // Create string for SQL statement
             String strSelect =
-                    "SELECT employees.emp_no, employees.first_name, employees.last_name, titles.title, salaries.salary, departments.dept_name "
-                            + "FROM employees, salaries, titles, departments, dept_emp "
-                            + "WHERE employees.emp_no = salaries.emp_no "
-                            + "AND employees.emp_no = titles.emp_no "
-                            + "AND employees.emp_no = dept_emp.emp_no "
-                            + "AND dept_emp.dept_no = departments.dept_no "
-
-                            + "AND salaries.to_date = '9999-01-01' "
+                    "SELECT employees.emp_no, employees.first_name, employees.last_name, titles.title, salaries.salary "
+                            + "FROM employees "
+                            + "INNER JOIN salaries ON employees.emp_no = salaries.emp_no "
+                            + "INNER JOIN titles ON employees.emp_no = titles.emp_no "
+                            + "WHERE salaries.to_date = '9999-01-01' "
                             + "AND titles.to_date = '9999-01-01' "
-                            + "AND dept_emp.to_date = '9999-01-01' "
-                            + "ORDER BY departments.dept_name ASC, employees.emp_no ASC";
+                            + "AND titles.title = ? "
+                            + "ORDER BY employees.emp_no ASC";
+
+            // Use PreparedStatement to safely bind the role parameter
+            PreparedStatement pstmt = con.prepareStatement(strSelect);
+            pstmt.setString(1, title);
 
             // Execute SQL statement
-            ResultSet rset = stmt.executeQuery(strSelect);
+            ResultSet rset = pstmt.executeQuery();
 
             // Extract employee information
             ArrayList<Employee> employees = new ArrayList<>();
@@ -111,7 +110,6 @@ public class App {
                 emp.last_name = rset.getString("last_name");
                 emp.title = rset.getString("title");
                 emp.salary = rset.getInt("salary");
-                emp.dept_name = rset.getString("dept_name");
                 employees.add(emp);
             }
             return employees;
@@ -134,14 +132,15 @@ public class App {
             return;
         }
 
-        // Print header
-        System.out.println(String.format("%-10s %-15s %-20s %-20s %-8s", "Emp No", "First Name", "Last Name", "Salary", "Department"));
+        // Print header (5 format specifiers for 5 columns)
+        System.out.println(String.format("%-10s %-15s %-20s %-20s %-10s",
+                "Emp No", "First Name", "Last Name", "Title", "Salary"));
 
         // Loop over all employees in the list
         for (Employee emp : employees) {
             if (emp == null) continue;
-            String emp_string = String.format("%-10s %-15s %-20s %-20s %-8s",
-                    emp.emp_no, emp.first_name, emp.last_name, emp.salary, emp.dept_name);
+            String emp_string = String.format("%-10s %-15s %-20s %-20s %-10s",
+                    emp.emp_no, emp.first_name, emp.last_name, emp.title, emp.salary);
             System.out.println(emp_string);
         }
     }
