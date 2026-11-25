@@ -4,18 +4,19 @@ import java.sql.*;
 import java.util.ArrayList;
 
 public class App {
-    public static void main(String[] args) {
+    public static void main(String[] args)
+    {
         // Create new Application
         App a = new App();
 
         // Connect to database
         a.connect();
 
-        // Get employees for a specific role (e.g., "Senior Engineer")
-        ArrayList<Employee> employees = a.getSalariesByRole("Senior Engineer");
+        // Extract employee salary information
+        ArrayList<Employee> employees = a.getAllSalaries();
 
-        // Display results
-        a.printSalaries(employees);
+        // Test the size of the returned data - should be 240124
+        System.out.println(employees.size());
 
         // Disconnect from database
         a.disconnect();
@@ -76,46 +77,40 @@ public class App {
     }
 
     /**
-     * Gets all current employees and their salaries for a given role.
-     *
-     * @param title The job title/role to filter by.
-     * @return A list of matching employees, or null if there is an error.
+     * Gets all the current employees and salaries.
+     * @return A list of all employees and salaries, or null if there is an error.
      */
-    public ArrayList<Employee> getSalariesByRole(String title) {
-        try {
+    public ArrayList<Employee> getAllSalaries()
+    {
+        try
+        {
+            // Create an SQL statement
+            Statement stmt = con.createStatement();
             // Create string for SQL statement
             String strSelect =
-                    "SELECT employees.emp_no, employees.first_name, employees.last_name, titles.title, salaries.salary "
-                            + "FROM employees "
-                            + "INNER JOIN salaries ON employees.emp_no = salaries.emp_no "
-                            + "INNER JOIN titles ON employees.emp_no = titles.emp_no "
-                            + "WHERE salaries.to_date = '9999-01-01' "
-                            + "AND titles.to_date = '9999-01-01' "
-                            + "AND titles.title = ? "
+                    "SELECT employees.emp_no, employees.first_name, employees.last_name, salaries.salary "
+                            + "FROM employees, salaries "
+                            + "WHERE employees.emp_no = salaries.emp_no AND salaries.to_date = '9999-01-01' "
                             + "ORDER BY employees.emp_no ASC";
-
-            // Use PreparedStatement to safely bind the role parameter
-            PreparedStatement pstmt = con.prepareStatement(strSelect);
-            pstmt.setString(1, title);
-
             // Execute SQL statement
-            ResultSet rset = pstmt.executeQuery();
-
+            ResultSet rset = stmt.executeQuery(strSelect);
             // Extract employee information
-            ArrayList<Employee> employees = new ArrayList<>();
-            while (rset.next()) {
+            ArrayList<Employee> employees = new ArrayList<Employee>();
+            while (rset.next())
+            {
                 Employee emp = new Employee();
-                emp.emp_no = rset.getInt("emp_no");
-                emp.first_name = rset.getString("first_name");
-                emp.last_name = rset.getString("last_name");
-                emp.title = rset.getString("title");
-                emp.salary = rset.getInt("salary");
+                emp.emp_no = rset.getInt("employees.emp_no");
+                emp.first_name = rset.getString("employees.first_name");
+                emp.last_name = rset.getString("employees.last_name");
+                emp.salary = rset.getInt("salaries.salary");
                 employees.add(emp);
             }
             return employees;
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             System.out.println(e.getMessage());
-            System.out.println("Failed to get employee details");
+            System.out.println("Failed to get salary details");
             return null;
         }
     }
